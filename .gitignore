@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+
+# R
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+*.Rproj.user/
+
+# QIIME2 artifacts (optional - uncomment if you want to ignore these)
+# *.qza
+# *.qzv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Data files (optional - uncomment patterns as needed)
+# *.biom
+# *.fasta
+# *.fastq
+# *.fastq.gz
