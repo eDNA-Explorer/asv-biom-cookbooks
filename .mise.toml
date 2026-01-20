@@ -1,0 +1,7 @@
+[tools]
+python = "3.12"
+r = "4.4"
+
+[env]
+# Uncomment to set R library path for project-local packages
+# R_LIBS_USER = "{{config_root}}/.R/library"

@@ -1,0 +1,20 @@
+# Conda environment for Phyloseq cookbook
+# Usage: conda env create -f environment.yml
+#        conda activate phyloseq-cookbook
+
+name: phyloseq-cookbook
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - r-base>=4.3
+  - r-biocmanager
+  - bioconductor-phyloseq
+  - bioconductor-biostrings
+  - r-ggplot2
+  - r-vegan
+  - r-dplyr
+  - r-tidyr

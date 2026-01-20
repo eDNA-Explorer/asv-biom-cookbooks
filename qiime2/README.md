@@ -2,18 +2,51 @@
 
 Import and analyze eDNA Explorer BIOM files using [QIIME2](https://qiime2.org/).
 
-## Prerequisites
+## Environment Setup
+
+Choose one of the following methods to set up your QIIME2 environment:
+
+### Option A: Conda with Cookbook Environment
+
+Use the provided `environment.yml` for a minimal environment:
 
 ```bash
-# Install QIIME2 via conda
-# See https://docs.qiime2.org for the latest installation instructions
+# Create and activate the environment
+conda env create -f environment.yml
+conda activate qiime2-cookbook
 
-# Activate QIIME2 environment
+# Verify installation
+qiime --version
+```
+
+### Option B: Official QIIME2 Environment
+
+For the full QIIME2 distribution with all plugins:
+
+```bash
+# See https://docs.qiime2.org for the latest installation instructions
 conda activate qiime2-2024.10
 
 # Verify installation
 qiime --version
 ```
+
+### Option C: Mise + Conda
+
+If you use [mise](https://mise.jdx.dev/) for Python version management:
+
+```bash
+# From the repository root - installs Python 3.12
+mise install
+
+# Then create the QIIME2 conda environment
+conda env create -f environment.yml
+conda activate qiime2-cookbook
+```
+
+The repository's `.mise.toml` specifies Python 3.12.
+
+## Prerequisites
 
 **QIIME2 version**: 2024.10 or later recommended (supports BIOM v2.1.0 format)
 

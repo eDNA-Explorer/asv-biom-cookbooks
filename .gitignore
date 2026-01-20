@@ -39,6 +39,7 @@ ENV/
 Thumbs.db
 
 # IDE/Editor
+.claude/
 .idea/
 .vscode/
 *.swp

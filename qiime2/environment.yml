@@ -1,0 +1,23 @@
+# Conda environment for QIIME2 cookbook
+# Usage: conda env create -f environment.yml
+#        conda activate qiime2-cookbook
+#
+# Note: For full QIIME2 installation, see https://docs.qiime2.org
+# This environment provides a minimal setup for the cookbook scripts.
+
+name: qiime2-cookbook
+
+channels:
+  - qiime2
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python>=3.9
+  - qiime2>=2024.10
+  - q2cli
+  - q2-types
+  - q2-feature-table
+  - q2-diversity
+  - q2-taxa

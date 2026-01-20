@@ -2,6 +2,41 @@
 
 Import and analyze eDNA Explorer BIOM files using [Phyloseq](https://joey711.github.io/phyloseq/) in R.
 
+## Environment Setup
+
+Choose one of the following methods to set up your R environment:
+
+### Option A: Conda (Recommended)
+
+Use the provided `environment.yml` for a reproducible environment:
+
+```bash
+# Create and activate the environment
+conda env create -f environment.yml
+conda activate phyloseq-cookbook
+
+# Start R
+R
+```
+
+### Option B: Mise
+
+If you use [mise](https://mise.jdx.dev/) for runtime management:
+
+```bash
+# From the repository root
+mise install
+
+# Then install R packages manually (see Prerequisites below)
+R
+```
+
+The repository's `.mise.toml` specifies R 4.4.
+
+### Option C: System R
+
+Use your system R installation and install packages manually.
+
 ## Prerequisites
 
 ```r
