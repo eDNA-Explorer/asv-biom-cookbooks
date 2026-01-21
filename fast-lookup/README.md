@@ -61,35 +61,64 @@ conda env create -f environment.yml
 conda activate fast-lookup
 ```
 
-## Bundle Format
+## Bundle Format (v2.1)
 
-eDNA Explorer exports data as compressed tar bundles:
+eDNA Explorer exports data as **zstd-compressed tar bundles** (`.tar.zst`):
 
-```
-{marker}-biom.tar
-├── {marker}-paired-asv.biom
-├── {marker}-paired-taxa.biom
-├── {marker}-paired_F.fasta.zst
-├── {marker}-paired_R.fasta.zst
-├── {marker}-unpaired_F-asv.biom      (if mode has data)
-├── {marker}-unpaired_F-taxa.biom     (if mode has data)
-├── {marker}-unpaired_F.fasta.zst     (if mode has data)
-├── {marker}-unpaired_R-asv.biom      (if mode has data)
-├── {marker}-unpaired_R-taxa.biom     (if mode has data)
-├── {marker}-unpaired_R.fasta.zst     (if mode has data)
-└── README.md
+```bash
+# Extract bundle
+zstd -d 16S_Bacteria-biom.tar.zst -c | tar -xf -
 ```
 
-**File naming conventions:**
-- `-asv.biom` - ASV count table (features × samples)
-- `-taxa.biom` - Taxonomy-collapsed table
-- `_F.fasta.zst` - Forward sequences (zstd compressed)
-- `_R.fasta.zst` - Reverse sequences (zstd compressed)
+### Bundle Contents
+
+```
+{marker}-biom.tar.zst → extracts to:
+├── {marker}-paired-asv.biom           # ASV count table (counts only)
+├── {marker}-paired-taxa.biom          # Taxonomy-collapsed with metadata
+├── {marker}-paired-lookup.tsv         # NEW: Pre-exported taxonomy lookup
+├── {marker}-paired-assignments.tsv    # NEW: Full Tronko assignment details
+├── {marker}-paired_f.fasta.zst        # Forward sequences (lowercase _f)
+├── {marker}-paired_r.fasta.zst        # Reverse sequences (lowercase _r)
+├── {marker}-unpaired_f-*.{biom,tsv,fasta.zst}  # Unpaired forward (if data exists)
+├── {marker}-unpaired_r-*.{biom,tsv,fasta.zst}  # Unpaired reverse (if data exists)
+└── samples.tsv                        # Sample metadata (350+ columns)
+```
+
+### New in v2.1: Sidecar Files
+
+**`lookup.tsv`** - Pre-exported taxonomy for fast lookups (no need to run `02_export_taxonomy.sh`!):
+```
+feature_id    read_set    sequence_md5    sequence_length    taxonomy    confidence
+16S_Bacteria_paired_F_819859    paired_F    7898fe9d...    273    Bacteria;Acidobacteria;...    3
+```
+
+**`assignments.tsv`** - Full Tronko output for quality filtering:
+```
+readname    taxonomic_path    score    forward_mismatch    reverse_mismatch    ...
+```
+
+**`samples.tsv`** - 350+ environmental variables from Google Earth Engine:
+```
+sample_id    database_id    latitude    longitude    precip_warmest_quarter_10y    ...
+```
+
+### File Naming Conventions
+
+| Pattern | Description |
+|---------|-------------|
+| `-asv.biom` | ASV count table (no embedded metadata) |
+| `-taxa.biom` | Taxonomy-collapsed with rich observation metadata |
+| `-lookup.tsv` | ASV ID → taxonomy quick lookup |
+| `-assignments.tsv` | Full Tronko assignment output |
+| `_f.fasta.zst` | Forward sequences (zstd compressed) |
+| `_r.fasta.zst` | Reverse sequences (zstd compressed) |
 
 ## Scripts Overview
 
 | Script | Description | Replaces |
 |--------|-------------|----------|
+| `lookup.py` | **Python all-in-one lookup** (no samtools needed) | Most shell scripts |
 | `00_index_fasta.sh` | Create FASTA index for O(1) lookups | N/A (one-time setup) |
 | `01_extract_bundle.sh` | Extract tar and decompress FASTA files | Manual extraction |
 | `02_export_taxonomy.sh` | Export taxonomy to TSV for fast grep | N/A (one-time setup) |
@@ -101,6 +130,37 @@ eDNA Explorer exports data as compressed tar bundles:
 | `07_filter_by_sample.sh` | Filter BIOM by sample ID | `grep` + column extraction for sample data |
 | `08_biom_to_fasta.sh` | BIOM filter → indexed FASTA sequences | Pipe without giant TSV |
 | `complete_workflow.sh` | Combined lookup for full ASV info | Multiple grep commands |
+
+## Python Lookup (Recommended)
+
+The `lookup.py` script provides an all-in-one Python solution that works without samtools:
+
+```bash
+# Install dependencies
+pip install pyfaidx pandas
+
+# Get sequence (creates index automatically)
+python lookup.py sequence 16S_Bacteria-paired_f.fasta 16S_Bacteria_paired_F_0
+
+# Get taxonomy
+python lookup.py taxonomy 16S_Bacteria-paired-lookup.tsv 16S_Bacteria_paired_F_819859
+
+# Get full info (sequence + taxonomy)
+python lookup.py info 16S_Bacteria-paired_f.fasta 16S_Bacteria-paired-lookup.tsv 16S_Bacteria_paired_F_819859
+
+# Filter high-confidence ASVs
+python lookup.py filter 16S_Bacteria-paired-lookup.tsv --min-confidence 3 -o high_conf.txt
+
+# Filter by taxon
+python lookup.py filter 16S_Bacteria-paired-lookup.tsv --taxon "Proteobacteria" -o proteo.txt
+
+# Benchmark performance
+python lookup.py benchmark 16S_Bacteria-paired_f.fasta -n 1000
+```
+
+**Performance** (1.3M sequence FASTA):
+- Index creation: ~5 seconds (one-time)
+- Single lookup: **0.005ms** (200,000 lookups/second)
 
 ## Quick Reference
 
@@ -237,12 +297,12 @@ Or use the script:
 
 ## Workflow Order
 
-For a typical setup after downloading a bundle:
+For a typical setup after downloading a v2.1 bundle:
 
 ```
-1. 01_extract_bundle.sh           ← Extract and decompress
-2. 02_export_taxonomy.sh          ← One-time taxonomy TSV export
-3. 00_index_fasta.sh              ← (Optional) Create FASTA index for fast lookups
+1. 01_extract_bundle.sh           ← Extract .tar.zst and decompress FASTA files
+2. (OPTIONAL) 02_export_taxonomy.sh  ← v2.1 bundles include lookup.tsv already!
+3. 00_index_fasta.sh              ← (Optional) Create FASTA index for O(1) lookups
 4. (Use lookup scripts as needed)
    ├── 03_find_sequence.sh        ← Single ASV sequence (linear scan)
    ├── 03b_find_sequence_indexed.sh ← Single ASV sequence (O(1) with index)
@@ -251,6 +311,15 @@ For a typical setup after downloading a bundle:
    ├── 06_filter_by_taxon.sh      ← All ASVs in a taxon group
    ├── 07_filter_by_sample.sh     ← All ASVs in a sample
    └── 08_biom_to_fasta.sh        ← BIOM filter → FASTA (indexed)
+```
+
+**v2.1 Shortcut**: Skip step 2! Use the bundled `lookup.tsv` directly:
+```bash
+# Find taxonomy instantly
+rg "^16S_Bacteria_paired_F_819859\t" 16S_Bacteria-paired-lookup.tsv
+
+# Filter by confidence level
+awk -F'\t' '$6 >= 3' 16S_Bacteria-paired-lookup.tsv > high_confidence.tsv
 ```
 
 Or use `complete_workflow.sh` to get all info for an ASV at once.

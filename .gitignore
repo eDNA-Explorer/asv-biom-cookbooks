@@ -51,3 +51,11 @@ Thumbs.db
 # *.fasta
 # *.fastq
 # *.fastq.gz
+
+# Downloaded binaries and test data
+bin/
+data/
+
+# FASTA index files (regenerated as needed)
+*.fai
+*.gzi

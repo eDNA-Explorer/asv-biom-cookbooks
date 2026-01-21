@@ -78,19 +78,23 @@ Or use `complete_workflow.sh` to run everything at once.
 ## Quick Start
 
 ```bash
+# Extract v2.1 bundle first
+zstd -d 16S_Bacteria-biom.tar.zst -c | tar -xf -
+zstd -d 16S_Bacteria-paired_f.fasta.zst  # Decompress FASTA
+
 # Activate QIIME2
 conda activate qiime2-2024.10
 
 # Import feature table
 qiime tools import \
-    --input-path biom/16S_Bacteria-asv.biom \
+    --input-path 16S_Bacteria-paired-asv.biom \
     --type 'FeatureTable[Frequency]' \
     --input-format BIOMV210Format \
     --output-path feature-table.qza
 
 # Import forward sequences
 qiime tools import \
-    --input-path fasta/16S_Bacteria_paired_F.fasta \
+    --input-path 16S_Bacteria-paired_f.fasta \
     --output-path rep-seqs.qza \
     --type 'FeatureData[Sequence]'
 
@@ -100,20 +104,19 @@ qiime feature-table summarize \
     --o-visualization feature-table.qzv
 ```
 
-## File Naming Conventions
+## File Naming Conventions (v2.1 Bundle)
 
-All scripts assume this directory structure:
+v2.1 bundles extract to a **flat directory structure**:
+
 ```
 your-working-directory/
-├── biom/
-│   ├── 16S_Bacteria-asv.biom
-│   └── 16S_Bacteria-taxa.biom
-├── fasta/
-│   ├── 16S_Bacteria_paired_F.fasta
-│   └── 16S_Bacteria_paired_R.fasta
-├── metadata/
-│   └── sample_metadata.tsv
-└── qiime2_output/           # Created by scripts
+├── 16S_Bacteria-paired-asv.biom       # ASV counts
+├── 16S_Bacteria-paired-taxa.biom      # Taxonomy-collapsed
+├── 16S_Bacteria-paired-lookup.tsv     # Pre-exported taxonomy
+├── 16S_Bacteria-paired_f.fasta        # Forward sequences (after decompression)
+├── 16S_Bacteria-paired_r.fasta        # Reverse sequences (after decompression)
+├── samples.tsv                        # Sample metadata (350+ columns)
+└── qiime2_output/                     # Created by scripts
 ```
 
 ## Sample Metadata Format

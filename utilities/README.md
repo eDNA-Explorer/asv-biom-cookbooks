@@ -6,24 +6,26 @@ Helper scripts for working with eDNA Explorer data files.
 
 eDNA Explorer BIOM files use **forward read names** as feature IDs:
 ```
-16S_Bacteria_paired_F_0
-16S_Bacteria_paired_F_1
+16S_Bacteria_paired_F_819859
+16S_Bacteria_paired_F_909386
 ...
 ```
 
 **Forward FASTA** headers match directly:
 ```
->16S_Bacteria_paired_F_0
+>16S_Bacteria_paired_F_819859
 ATGCGATCGATCGATCG...
 ```
 
-**Reverse FASTA** headers use `_paired_R_`:
+**Reverse FASTA** headers use `_paired_R_` (or `_R_` for the direction portion):
 ```
->16S_Bacteria_paired_R_0
+>16S_Bacteria_paired_R_819859
 GCTAGCTAGCTAGCTAG...
 ```
 
 To import reverse sequences into Phyloseq or QIIME2, the headers must be transformed to match the BIOM feature IDs.
+
+> **Note (v2.1)**: FASTA files in bundles are now named with **lowercase** `_f` and `_r` suffixes (e.g., `16S_Bacteria-paired_f.fasta.zst`), but the sequence **headers** inside the FASTA still use uppercase `_F_` and `_R_`.
 
 ## Scripts
 

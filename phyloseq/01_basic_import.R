@@ -4,17 +4,22 @@
 # =============================================================================
 #
 # Description:
-#   Import an eDNA Explorer BIOM file into Phyloseq. This loads the feature
-#   table (OTU/ASV counts), sample metadata, and taxonomy (if embedded).
+#   Import an eDNA Explorer v2.1 BIOM file into Phyloseq. v2.1 ASV BIOM files
+#   contain only the count matrix - metadata is in sidecar files:
+#   - samples.tsv: Sample metadata (350+ environmental variables)
+#   - {marker}-{mode}-lookup.tsv: ASV taxonomy lookup
 #
 # Prerequisites:
 #   - phyloseq package installed
+#   - Extract bundle first: zstd -d bundle.tar.zst -c | tar -xf -
 #
 # Input:
-#   - BIOM file (e.g., "biom/16S_Bacteria-asv.biom")
+#   - BIOM file (e.g., "16S_Bacteria-paired-asv.biom")
+#   - samples.tsv (sample metadata)
+#   - lookup.tsv (optional, for taxonomy)
 #
 # Output:
-#   - phyloseq object with otu_table, sample_data, and tax_table
+#   - phyloseq object with otu_table, sample_data, and optionally tax_table
 #
 # =============================================================================
 
@@ -24,20 +29,36 @@ library(phyloseq)
 # Configuration
 # -----------------------------------------------------------------------------
 
-# Path to your BIOM file
+# Path to your BIOM file (v2.1 flat directory structure)
 # Adjust this to match your file location
-BIOM_FILE <- "biom/16S_Bacteria-asv.biom"
+BIOM_FILE <- "16S_Bacteria-paired-asv.biom"
+SAMPLES_FILE <- "samples.tsv"
+LOOKUP_FILE <- "16S_Bacteria-paired-lookup.tsv"  # For taxonomy
 
 # -----------------------------------------------------------------------------
 # Import BIOM File
 # -----------------------------------------------------------------------------
 
-# Import the BIOM file
-# This automatically loads:
-#   - Feature table (ASV/OTU counts per sample)
-#   - Sample metadata (if embedded)
-#   - Taxonomy table (if embedded)
+# Import the BIOM file (v2.1: counts only, no embedded metadata)
 ps <- import_biom(BIOM_FILE)
+
+# -----------------------------------------------------------------------------
+# Load Sample Metadata from Sidecar File
+# -----------------------------------------------------------------------------
+
+if (file.exists(SAMPLES_FILE)) {
+    cat("Loading sample metadata from:", SAMPLES_FILE, "\n")
+    sample_meta <- read.delim(SAMPLES_FILE, row.names = 1, check.names = FALSE)
+
+    # Filter to samples in BIOM
+    common_samples <- intersect(rownames(sample_meta), sample_names(ps))
+    if (length(common_samples) > 0) {
+        sample_data(ps) <- sample_data(sample_meta[common_samples, , drop = FALSE])
+        cat("Loaded metadata for", length(common_samples), "samples\n")
+    }
+} else {
+    cat("Note: samples.tsv not found. Sample metadata not loaded.\n")
+}
 
 # -----------------------------------------------------------------------------
 # Inspect the Result
@@ -45,11 +66,10 @@ ps <- import_biom(BIOM_FILE)
 
 # Print summary
 print(ps)
-# Example output:
+# Example output for v2.1 bundle:
 # phyloseq-class experiment-level object
-# otu_table()   OTU Table:         [ 5000 taxa and 200 samples ]
-# sample_data() Sample Data:       [ 200 samples by 8 sample variables ]
-# tax_table()   Taxonomy Table:    [ 5000 taxa by 7 taxonomic ranks ]
+# otu_table()   OTU Table:         [ 1322726 taxa and 14 samples ]
+# sample_data() Sample Data:       [ 14 samples by 349 sample variables ]
 
 # Check dimensions
 cat("\nNumber of taxa (ASVs):", ntaxa(ps), "\n")

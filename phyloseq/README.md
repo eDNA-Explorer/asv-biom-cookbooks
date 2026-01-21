@@ -83,29 +83,38 @@ Use `05_external_metadata.R` to merge your own sample information.
 ```r
 library(phyloseq)
 
-# Simplest import
-ps <- import_biom("biom/16S_Bacteria-asv.biom")
+# Import BIOM (v2.1: counts only, no embedded metadata)
+ps <- import_biom("16S_Bacteria-paired-asv.biom")
+
+# Load sample metadata from sidecar file
+sample_meta <- read.delim("samples.tsv", row.names = 1)
+sample_data(ps) <- sample_data(sample_meta)
 
 # Check what you have
 ps
 # phyloseq-class experiment-level object
-# otu_table()   OTU Table:         [ 5000 taxa and 200 samples ]
-# sample_data() Sample Data:       [ 200 samples by 8 sample variables ]
-# tax_table()   Taxonomy Table:    [ 5000 taxa by 7 taxonomic ranks ]
+# otu_table()   OTU Table:         [ 1322726 taxa and 14 samples ]
+# sample_data() Sample Data:       [ 14 samples by 349 sample variables ]
 ```
 
-## File Path Conventions
+## File Path Conventions (v2.1 Bundle)
 
-All scripts assume this directory structure:
+v2.1 bundles extract to a **flat directory structure**:
+
+```bash
+# Extract the bundle first
+zstd -d 16S_Bacteria-biom.tar.zst -c | tar -xf -
+zstd -d 16S_Bacteria-paired_f.fasta.zst  # Decompress FASTA
+```
+
 ```
 your-working-directory/
-├── biom/
-│   ├── 16S_Bacteria-asv.biom
-│   └── 16S_Bacteria-taxa.biom
-├── fasta/
-│   ├── 16S_Bacteria_paired_F.fasta
-│   └── 16S_Bacteria_paired_R.fasta
-└── scripts/  # (optional) put these R scripts here
+├── 16S_Bacteria-paired-asv.biom      # ASV counts (no embedded metadata)
+├── 16S_Bacteria-paired-taxa.biom     # Taxonomy-collapsed with metadata
+├── 16S_Bacteria-paired-lookup.tsv    # ASV ID → taxonomy lookup
+├── 16S_Bacteria-paired_f.fasta       # Forward sequences (decompressed)
+├── 16S_Bacteria-paired_r.fasta       # Reverse sequences (decompressed)
+└── samples.tsv                       # Sample metadata (350+ columns)
 ```
 
 Adjust the paths in each script to match your actual file locations.

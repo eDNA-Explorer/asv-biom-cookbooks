@@ -65,43 +65,58 @@ qiime --version
 
 ## Understanding Your Downloaded Files
 
-When you download data from eDNA Explorer, you'll receive a tar archive containing these files:
+When you download data from eDNA Explorer, you'll receive a **zstd-compressed tar bundle** (`.tar.zst`) containing all data files in a **flat directory structure**.
 
-### Directory Structure
+### Extracting the Bundle
+
+```bash
+# Decompress and extract in one step
+zstd -d 16S_Bacteria-biom.tar.zst -c | tar -xf -
+
+# Or two steps
+zstd -d 16S_Bacteria-biom.tar.zst
+tar -xf 16S_Bacteria-biom.tar
+```
+
+### Bundle Contents (v2.1 Format)
+
+Each bundle contains files for up to three **read modes**: `paired`, `unpaired_f`, and `unpaired_r`.
 
 ```
-your-project-export/
-├── biom/
-│   ├── {marker}-asv.biom          # ASV-level feature table
-│   └── {marker}-taxa.biom         # Taxonomy-collapsed feature table
-├── fasta/
-│   ├── {marker}_paired_F.fasta    # Forward sequences
-│   ├── {marker}_paired_R.fasta    # Reverse sequences
-│   ├── {marker}_unpaired_F.fasta  # Unpaired forward (if applicable)
-│   └── {marker}_unpaired_R.fasta  # Unpaired reverse (if applicable)
-└── metadata/
-    └── sample_metadata.tsv        # Sample metadata (if exported separately)
+16S_Bacteria-biom.tar.zst → extracts to:
+├── 16S_Bacteria-paired-asv.biom         # ASV feature table (HDF5 BIOM)
+├── 16S_Bacteria-paired-taxa.biom        # Taxonomy-collapsed table
+├── 16S_Bacteria-paired-lookup.tsv       # ASV lookup with taxonomy
+├── 16S_Bacteria-paired-assignments.tsv  # Full Tronko assignment details
+├── 16S_Bacteria-paired_f.fasta.zst      # Forward sequences (zstd compressed)
+├── 16S_Bacteria-paired_r.fasta.zst      # Reverse sequences (zstd compressed)
+├── 16S_Bacteria-unpaired_f-*.{biom,tsv,fasta.zst}  # Unpaired forward (if data exists)
+├── 16S_Bacteria-unpaired_r-*.{biom,tsv,fasta.zst}  # Unpaired reverse (if data exists)
+└── samples.tsv                          # Sample metadata (shared across modes)
 ```
 
 ### File Types
 
-| File | Description | Use Case |
-|------|-------------|----------|
-| `{marker}-asv.biom` | ASV-level feature table with full sequence resolution | Detailed diversity analysis, sequence-based studies |
-| `{marker}-taxa.biom` | Taxonomy-collapsed table (genus/species level) | Community composition, taxonomic summaries |
-| `{marker}_paired_F.fasta` | Forward read sequences | Phylogenetic analysis, sequence alignment |
-| `{marker}_paired_R.fasta` | Reverse read sequences | Quality verification, extended sequence context |
+| File Pattern | Description | Use Case |
+|--------------|-------------|----------|
+| `{marker}-{mode}-asv.biom` | ASV-level feature table (counts only) | Diversity analysis, abundance studies |
+| `{marker}-{mode}-taxa.biom` | Taxonomy-collapsed table with metadata | Community composition, taxonomic summaries |
+| `{marker}-{mode}-lookup.tsv` | ASV lookup: ID, taxonomy, confidence, MD5 | Quick filtering, taxonomy queries |
+| `{marker}-{mode}-assignments.tsv` | Full Tronko output with quality scores | Advanced filtering, quality analysis |
+| `{marker}-{mode}_f.fasta.zst` | Forward sequences (zstd compressed) | Phylogenetic analysis, sequence alignment |
+| `{marker}-{mode}_r.fasta.zst` | Reverse sequences (zstd compressed) | Quality verification, extended context |
+| `samples.tsv` | Sample metadata with 350+ environmental variables | Environmental analysis, sample filtering |
 
-### Example Files
+### Example: 16S Bacteria Bundle
 
-For a 16S Bacteria marker, you might see:
 ```
-biom/
-├── 16S_Bacteria-asv.biom
-└── 16S_Bacteria-taxa.biom
-fasta/
-├── 16S_Bacteria_paired_F.fasta
-└── 16S_Bacteria_paired_R.fasta
+16S_Bacteria-paired-asv.biom        # 1.3M ASVs × 14 samples
+16S_Bacteria-paired-taxa.biom       # 6K taxa with rich metadata
+16S_Bacteria-paired-lookup.tsv      # Pre-exported taxonomy for fast lookups
+16S_Bacteria-paired-assignments.tsv # Full Tronko scores and quality metrics
+16S_Bacteria-paired_f.fasta.zst     # Forward sequences
+16S_Bacteria-paired_r.fasta.zst     # Reverse sequences
+samples.tsv                         # 350 columns of environmental data
 ```
 
 ---
@@ -113,50 +128,63 @@ fasta/
 eDNA Explorer uses **forward read names** as feature IDs in BIOM files:
 
 ```
-{marker}_paired_F_{counter}
+{marker}_{mode}_{direction}_{seq_number}
 ```
 
 **Examples:**
-- `16S_Bacteria_paired_F_0`
-- `16S_Bacteria_paired_F_1`
+- `16S_Bacteria_paired_F_819859`
+- `16S_Bacteria_paired_F_909386`
 - `vert12S_paired_F_42`
 
-This format directly matches the headers in forward FASTA files, enabling seamless sequence lookups.
+This format directly matches the headers in forward FASTA files, enabling seamless sequence lookups. Note that `seq_number` values are **non-sequential** (assigned by the pipeline), not counters starting from 0.
 
-### Sample Metadata (Embedded)
+### ASV BIOM Files (Counts Only)
 
-Each BIOM file contains sample metadata with these fields:
+The ASV BIOM file (`{marker}-{mode}-asv.biom`) contains **only the count matrix**:
+- No embedded sample metadata (use `samples.tsv`)
+- No embedded observation metadata (use `lookup.tsv`)
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| `sample_id` | Internal identifier | `clxyz123abc` |
-| `sample_name` | User-provided name | `Site_A_Rep1` |
-| `latitude` | GPS latitude | `45.5231` |
-| `longitude` | GPS longitude | `-122.6765` |
-| `country` | Country name | `United States` |
-| `state` | State/province | `Oregon` |
-| `sample_date` | Collection date | `2024-06-15` |
+This design keeps the BIOM file focused on counts, with metadata in efficient sidecar TSV files.
 
-Additional environmental variables from Google Earth Engine may be included if enabled during project setup.
+### Sample Metadata (`samples.tsv`)
 
-### Observation Metadata
+The `samples.tsv` file contains **350+ columns** of sample metadata:
 
-**ASV BIOM files** include per-feature metadata:
+| Column Category | Examples |
+|-----------------|----------|
+| **Core** | `sample_id`, `database_id`, `latitude`, `longitude`, `state`, `country` |
+| **Climate** | `precip_warmest_quarter_10y`, `annual_mean_day_lst_c_3y`, `aridity_index_30y` |
+| **Vegetation** | `ndvi_glcm_contrast_10y`, `hyperspectral_moisture_index_1y` |
+| **Soil** | `slope_deg` (and many more GEE variables) |
 
-| Field | Description |
-|-------|-------------|
-| `sequence` | Forward DNA sequence |
-| `reverse_sequence` | Reverse DNA sequence (paired mode) |
-| `read_type` | Mode identifier (`paired`, `unpaired_F`, etc.) |
-| `taxonomic_path` | Full taxonomy string |
+### ASV Lookup Table (`lookup.tsv`)
 
-**Taxa BIOM files** include:
+The `{marker}-{mode}-lookup.tsv` provides quick access to ASV metadata:
 
-| Field | Description |
-|-------|-------------|
-| `taxonomy` | Parsed taxonomy array `["k__Bacteria", "p__Proteobacteria", ...]` |
-| `confidence_level` | 1-5 confidence rating |
-| `mean_score` | Average assignment score |
+| Column | Type | Description |
+|--------|------|-------------|
+| `feature_id` | string | ASV ID matching BIOM observation IDs |
+| `read_set` | string | `paired_F`, `paired_R`, `unpaired_F`, `unpaired_R` |
+| `sequence_md5` | string | MD5 hash of the sequence |
+| `sequence_length` | int | Length in base pairs |
+| `taxonomy` | string | Assigned taxonomy (semicolon-delimited) |
+| `confidence` | int | Confidence level (0-5) |
+
+### Taxa BIOM Files (Rich Metadata)
+
+The Taxa BIOM file (`{marker}-{mode}-taxa.biom`) includes **embedded observation metadata**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `taxonomy` | array | Parsed taxonomy `["k__Bacteria", "p__Proteobacteria", ...]` |
+| `taxonomic_path` | string | Full semicolon-delimited path |
+| `total_asvs` | int | Number of ASVs collapsed into this taxon |
+| `confidence_level` | int | 1-5 confidence rating |
+| `mean_score` | float | Average Tronko assignment score |
+| `mean_forward_mismatch` | float | Average forward primer mismatches |
+| `mean_reverse_mismatch` | float | Average reverse primer mismatches |
+| `mean_chi2` | float | Average chi-squared (chimera indicator) |
+| `mean_divergence` | float | Average sequence divergence |
 
 ### Taxonomy Format
 
@@ -230,19 +258,33 @@ See [utilities/](utilities/) for preprocessing scripts in Python, R, and bash.
 
 ## Quick Start
 
+### Extract Bundle First
+
+```bash
+# Decompress and extract
+zstd -d 16S_Bacteria-biom.tar.zst -c | tar -xf -
+
+# Decompress FASTA files for analysis
+zstd -d 16S_Bacteria-paired_f.fasta.zst
+zstd -d 16S_Bacteria-paired_r.fasta.zst
+```
+
 ### Phyloseq (R)
 
 ```r
 library(phyloseq)
 
-# Basic import (feature table + embedded metadata)
-ps <- import_biom("biom/16S_Bacteria-asv.biom")
+# Basic import (feature table only - metadata in sidecar files)
+ps <- import_biom("16S_Bacteria-paired-asv.biom")
+
+# Load sample metadata separately
+sample_meta <- read.delim("samples.tsv", row.names = 1)
+sample_data(ps) <- sample_data(sample_meta)
 
 # With forward sequences
-ps <- import_biom(
-    BIOMfilename = "biom/16S_Bacteria-asv.biom",
-    refseqfilename = "fasta/16S_Bacteria_paired_F.fasta"
-)
+library(Biostrings)
+seqs <- readDNAStringSet("16S_Bacteria-paired_f.fasta")
+ps <- merge_phyloseq(ps, refseq(seqs))
 
 # Check structure
 ps
@@ -255,19 +297,34 @@ See [phyloseq/](phyloseq/) for complete examples including reverse sequences and
 ```bash
 # Import feature table
 qiime tools import \
-    --input-path biom/16S_Bacteria-asv.biom \
+    --input-path 16S_Bacteria-paired-asv.biom \
     --type 'FeatureTable[Frequency]' \
     --input-format BIOMV210Format \
     --output-path feature-table.qza
 
 # Import forward sequences
 qiime tools import \
-    --input-path fasta/16S_Bacteria_paired_F.fasta \
+    --input-path 16S_Bacteria-paired_f.fasta \
     --output-path rep-seqs.qza \
     --type 'FeatureData[Sequence]'
 ```
 
 See [qiime2/](qiime2/) for complete workflow including reverse sequences and diversity analysis.
+
+### Fast Lookups (No Loading Full Files)
+
+```bash
+# Find taxonomy for an ASV (instant with ripgrep)
+rg "^16S_Bacteria_paired_F_819859\t" 16S_Bacteria-paired-lookup.tsv
+
+# Filter high-confidence ASVs
+awk -F'\t' '$6 >= 3' 16S_Bacteria-paired-lookup.tsv > high_confidence.tsv
+
+# Find sequence (after decompressing FASTA)
+grep -A1 "^>16S_Bacteria_paired_F_819859$" 16S_Bacteria-paired_f.fasta
+```
+
+See [fast-lookup/](fast-lookup/) for optimized lookup scripts.
 
 ---
 

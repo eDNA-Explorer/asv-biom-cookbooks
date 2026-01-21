@@ -1,0 +1,28 @@
+[project]
+name = "asv-biom-cookbooks"
+version = "0.1.0"
+description = "Cookbooks for working with eDNA Explorer BIOM bundles"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "biom-format>=2.1.0",
+    "h5py>=3.0.0",
+    "pandas>=2.0.0",
+    "pyfaidx>=0.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

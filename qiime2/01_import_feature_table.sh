@@ -31,7 +31,8 @@ set -e  # Exit on error
 # -----------------------------------------------------------------------------
 
 # Input BIOM file (can be overridden via command line argument)
-BIOM_FILE="${1:-biom/16S_Bacteria-asv.biom}"
+# v2.1 bundles use flat directory with mode in filename
+BIOM_FILE="${1:-16S_Bacteria-paired-asv.biom}"
 
 # Output directory
 OUTPUT_DIR="qiime2_output"
@@ -41,7 +42,8 @@ OUTPUT_QZA="${OUTPUT_DIR}/feature-table.qza"
 OUTPUT_QZV="${OUTPUT_DIR}/feature-table.qzv"
 
 # Sample metadata (optional, for visualization)
-METADATA_FILE="metadata/sample_metadata.tsv"
+# v2.1 bundles use samples.tsv in flat directory
+METADATA_FILE="samples.tsv"
 
 # -----------------------------------------------------------------------------
 # Validation
