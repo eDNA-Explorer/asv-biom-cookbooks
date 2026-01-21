@@ -27,6 +27,7 @@ This cookbook provides step-by-step instructions for importing these files into 
 |----------|----------|----------|
 | [Phyloseq](phyloseq/) | R | Statistical analysis, publication-quality figures, integration with R ecosystem |
 | [QIIME2](qiime2/) | CLI/Python | Reproducible pipelines, provenance tracking, plugin ecosystem |
+| [Fast Lookup](fast-lookup/) | CLI | Quick ASV queries (sequence, taxonomy, counts) without loading huge files |
 
 ---
 
@@ -326,6 +327,7 @@ sample_names(ps) <- sample_data(ps)$sample_name
 |--------|-------------|
 | [phyloseq/](phyloseq/) | R scripts for Phyloseq import and analysis |
 | [qiime2/](qiime2/) | Bash scripts for QIIME2 import and analysis |
+| [fast-lookup/](fast-lookup/) | Fast ASV lookups using seqkit, ripgrep, and biom-format |
 | [utilities/](utilities/) | Helper scripts for FASTA preprocessing |
 
 ---

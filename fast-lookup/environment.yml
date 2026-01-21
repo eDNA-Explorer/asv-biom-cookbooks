@@ -1,0 +1,12 @@
+name: fast-lookup
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.10
+  - biom-format>=2.1.14
+  - seqkit>=2.5.0
+  - samtools>=1.18
+  - ripgrep>=14.0.0
+  - zstd>=1.5.0
